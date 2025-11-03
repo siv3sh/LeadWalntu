@@ -29,6 +29,15 @@ This system provides an end-to-end solution for SEO content analysis, combining 
 - **Interactive dashboard** for data exploration and insights
 - **Scalable pipeline** capable of processing thousands of pages
 
+### Dataset
+
+This project uses the **Dataset for Assignment** from Kaggle:
+- **Source**: [Kaggle - dataset_for_assignment](https://www.kaggle.com/datasets/naveen1729/dataset-for-assignment)
+- **Author**: naveen1729
+- **Format**: CSV with URL and HTML content columns
+- **Size**: 264,000+ web pages
+- **Purpose**: SEO content analysis and quality assessment
+
 ## Features
 
 ### Core Capabilities
@@ -150,7 +159,21 @@ pip install -r requirements.txt
 python3 -c "import nltk; nltk.download('punkt')"
 ```
 
-5. **Verify installation**
+5. **Download the dataset**
+
+Download the dataset from Kaggle:
+```bash
+# Option 1: Manual download
+# Visit: https://www.kaggle.com/datasets/naveen1729/dataset-for-assignment
+# Download and place in data/data.csv
+
+# Option 2: Using Kaggle API (requires kaggle account)
+kaggle datasets download -d naveen1729/dataset-for-assignment
+unzip dataset-for-assignment.zip -d data/
+mv data/dataset-for-assignment.csv data/data.csv
+```
+
+6. **Verify installation**
 ```bash
 python3 -c "import streamlit, sklearn, sentence_transformers; print('✅ All packages installed')"
 ```
@@ -221,11 +244,19 @@ LeadWalntu/
 
 ### Input Format (`data/data.csv`)
 
+**Source**: [Kaggle - dataset_for_assignment](https://www.kaggle.com/datasets/naveen1729/dataset-for-assignment) by naveen1729
+
+The dataset contains 264,000+ web pages with the following structure:
+
 ```csv
 url,html_content
 https://example.com/page1,"<!DOCTYPE html><html>...</html>"
 https://example.com/page2,"<!DOCTYPE html><html>...</html>"
 ```
+
+**Columns:**
+- `url`: The webpage URL (string)
+- `html_content`: Complete HTML source code (string)
 
 ### Output Formats
 
@@ -397,6 +428,7 @@ This project is licensed under the MIT License.
 
 ## Acknowledgments
 
+- **Dataset**: [naveen1729's dataset_for_assignment](https://www.kaggle.com/datasets/naveen1729/dataset-for-assignment) on Kaggle
 - **Sentence Transformers**: For semantic similarity models
 - **Streamlit**: For rapid dashboard development
 - **scikit-learn**: For machine learning capabilities
