@@ -23,7 +23,9 @@ data/duplicates.csv
 !data/sample_*.csv
 
 # Models
-models/*.pkl
+models/quality_model.pkl
+# Keep sample model
+!models/sample_*.pkl
 
 # IDE
 .vscode/

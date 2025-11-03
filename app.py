@@ -213,13 +213,18 @@ def process_raw_data():
 
 @st.cache_resource
 def load_model():
-    """Load trained model"""
+    """Load trained model - falls back to sample model"""
     try:
         with open('models/quality_model.pkl', 'rb') as f:
             model = pickle.load(f)
         return model
     except FileNotFoundError:
-        return None
+        try:
+            with open('models/sample_quality_model.pkl', 'rb') as f:
+                model = pickle.load(f)
+            return model
+        except FileNotFoundError:
+            return None
 
 @st.cache_resource
 def load_embedder():
@@ -623,17 +628,55 @@ elif page == "Live Analysis":
         html_content = st.text_area("Paste your HTML content here:", height=200)
     
     elif input_method == "Enter URL":
-        url = st.text_input("Enter URL:", placeholder="https://example.com")
-        if url and st.button("Fetch from URL", type="secondary"):
-            with st.spinner(f"Fetching content from {url}..."):
-                result = fetch_url_content(url)
-                if isinstance(result, tuple):  # Error occurred
-                    st.error(f"Failed to fetch URL: {result[1]}")
-                    st.info("Common issues: Invalid URL, website blocking bots, or timeout. Try pasting HTML instead.")
-                else:
-                    html_content = result
-                    st.success(f"Successfully fetched content from {url}")
-                    st.info(f"Fetched {len(html_content)} characters")
+        col1, col2 = st.columns([4, 1])
+        
+        with col1:
+            url = st.text_input("Enter URL:", placeholder="https://example.com/article")
+        
+        with col2:
+            if st.button("Try Demo URL"):
+                url = "https://httpbin.org/html"
+                st.session_state['demo_url'] = url
+        
+        # Use demo URL if set
+        if 'demo_url' in st.session_state and st.session_state.get('demo_url'):
+            url = st.session_state['demo_url']
+            del st.session_state['demo_url']
+        
+        st.info("💡 Tip: Some websites block automated requests. If fetching fails, use 'Paste HTML' instead.")
+        
+        if url and st.button("Fetch from URL", type="primary"):
+            if not url.startswith(('http://', 'https://')):
+                st.error("Please enter a valid URL starting with http:// or https://")
+            else:
+                with st.spinner(f"Fetching content from {url}..."):
+                    try:
+                        result = fetch_url_content(url, timeout=15)
+                        if isinstance(result, tuple):  # Error occurred
+                            st.error(f"Failed to fetch URL: {result[1]}")
+                            with st.expander("Troubleshooting Tips"):
+                                st.markdown("""
+                                **Common issues:**
+                                - Website blocks automated requests (403/429 errors)
+                                - Invalid URL or page doesn't exist (404 error)
+                                - Connection timeout (slow server or network)
+                                - SSL certificate issues
+                                
+                                **Solutions:**
+                                1. Open the URL in your browser
+                                2. Right-click → "View Page Source" or press Ctrl+U
+                                3. Copy all the HTML
+                                4. Use "Paste HTML" option above
+                                """)
+                        else:
+                            html_content = result
+                            st.success(f"✅ Successfully fetched content!")
+                            st.info(f"📄 Retrieved {len(html_content):,} characters")
+                            # Auto-trigger analysis
+                            st.session_state['html_to_analyze'] = html_content
+                    except Exception as e:
+                        st.error(f"Unexpected error: {str(e)}")
+                        st.info("Try using the 'Paste HTML' option instead.")
     
     elif input_method == "Upload File":
         uploaded_file = st.file_uploader("Upload HTML file", type=['html', 'htm'])
@@ -739,8 +782,20 @@ elif page == "Model Insights":
     extracted, features, duplicates = load_data()
     model = load_model()
     
+    # Check if using sample data/model
+    using_sample = False
+    if features is not None:
+        try:
+            pd.read_csv('data/features.csv')
+        except FileNotFoundError:
+            using_sample = True
+    
+    if using_sample:
+        st.info("ℹ️ **Demo Mode**: Showing insights from sample model trained on demo data.")
+    
     if model is None or features is None:
-        st.warning("Model or data not available. Run the notebook first.")
+        st.warning("Model or data not available.")
+        st.info("Upload your data.csv and click 'Process Data Now' on the Dashboard to train a model on your content.")
     else:
         # Model info
         st.subheader("Model Information")
