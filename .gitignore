@@ -36,7 +36,9 @@ models/*.pkl
 Thumbs.db
 
 # Streamlit
-.streamlit/
+.streamlit/secrets.toml
+# Keep config.toml for deployment
+!.streamlit/config.toml
 
 # Logs
 *.log
