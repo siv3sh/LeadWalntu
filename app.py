@@ -103,13 +103,25 @@ def process_raw_data():
         # Load raw data
         df = pd.read_csv('data/data.csv')
         
-        # Parse HTML
+        if len(df) == 0:
+            return False, "data.csv is empty"
+        
+        # Limit to first 1000 rows for cloud processing
+        max_rows = min(1000, len(df))
+        df = df.head(max_rows)
+        
+        # Parse HTML with progress tracking
         parsed_data = []
+        total = len(df)
+        
         for idx, row in df.iterrows():
-            result = parse_html(row['html_content'])
+            result = parse_html(row.get('html_content'))
             if result:
-                result['url'] = row['url']
+                result['url'] = row.get('url', f'page_{idx}')
                 parsed_data.append(result)
+        
+        if len(parsed_data) == 0:
+            return False, "No valid HTML content found to process"
         
         extracted_df = pd.DataFrame(parsed_data)
         extracted_df = extracted_df[extracted_df['word_count'] > 0]
@@ -209,7 +221,11 @@ def load_embedder():
 def parse_html(html_content):
     """Parse HTML and extract clean text"""
     try:
-        soup = BeautifulSoup(html_content, 'html.parser')
+        # Check for None or NaN
+        if pd.isna(html_content) or html_content is None or str(html_content).strip() == '':
+            return None
+            
+        soup = BeautifulSoup(str(html_content), 'html.parser')
         
         # Remove script and style
         for script in soup(["script", "style"]):
@@ -226,6 +242,9 @@ def parse_html(html_content):
         clean_text = ' '.join(texts)
         clean_text = re.sub(r'\s+', ' ', clean_text).strip()
         word_count = len(clean_text.split())
+        
+        if word_count == 0:
+            return None
         
         return {
             'title': title,
@@ -331,22 +350,33 @@ if page == "Dashboard":
                 st.success("Found data/data.csv")
                 
                 if st.button("Process Data Now", type="primary"):
-                    with st.spinner("Processing data... This may take a few minutes."):
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-                        
-                        status_text.text("Loading data...")
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    try:
+                        status_text.text("Step 1/5: Loading data...")
                         progress_bar.progress(10)
                         
+                        status_text.text("Step 2/5: Parsing HTML content...")
+                        progress_bar.progress(20)
+                        
                         success, message = process_raw_data()
+                        
                         progress_bar.progress(100)
+                        status_text.empty()
                         
                         if success:
-                            st.success(f"Success: {message}")
-                            st.info("Refreshing page...")
+                            st.success(f"✅ {message}")
+                            st.info("Page will refresh to show results...")
+                            import time
+                            time.sleep(2)
                             st.rerun()
                         else:
-                            st.error(f"Failed: {message}")
+                            st.error(f"❌ Processing failed: {message}")
+                            st.info("Please check that data/data.csv exists and has valid HTML content.")
+                    except Exception as e:
+                        st.error(f"❌ Unexpected error: {str(e)}")
+                        st.info("Try using the Jupyter notebook for large datasets.")
             else:
                 st.warning("data/data.csv not found")
                 st.info("Place your data.csv in the data/ folder first")
