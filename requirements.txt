@@ -10,5 +10,3 @@ seaborn==0.12.2
 plotly==5.17.0
 nltk==3.8.1
 requests==2.31.0
-torch==2.0.1
-pillow==10.0.0
