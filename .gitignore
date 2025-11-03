@@ -17,9 +17,10 @@ ENV/
 data/data.csv
 data/extracted_content.csv
 data/features.csv
+data/duplicates.csv
 
-# Keep small files
-!data/duplicates.csv
+# Keep sample files for demo
+!data/sample_*.csv
 
 # Models
 models/*.pkl

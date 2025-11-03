@@ -72,14 +72,22 @@ page = st.sidebar.radio(
 # Helper Functions
 @st.cache_data
 def load_data():
-    """Load processed data"""
+    """Load processed data - uses sample data if actual data not found"""
     try:
+        # Try to load actual processed data first
         extracted = pd.read_csv('data/extracted_content.csv')
         features = pd.read_csv('data/features.csv')
         duplicates = pd.read_csv('data/duplicates.csv')
         return extracted, features, duplicates
     except FileNotFoundError:
-        return None, None, None
+        # Fall back to sample data
+        try:
+            extracted = pd.read_csv('data/sample_extracted_content.csv')
+            features = pd.read_csv('data/sample_features.csv')
+            duplicates = pd.read_csv('data/sample_duplicates.csv')
+            return extracted, features, duplicates
+        except FileNotFoundError:
+            return None, None, None
 
 def fetch_url_content(url, timeout=10):
     """Fetch HTML content from URL"""
@@ -308,6 +316,15 @@ if page == "Dashboard":
     st.header("Overview Dashboard")
     
     extracted, features, duplicates = load_data()
+    
+    # Check if using sample data
+    using_sample_data = False
+    if extracted is not None:
+        try:
+            pd.read_csv('data/extracted_content.csv')
+        except FileNotFoundError:
+            using_sample_data = True
+            st.info("ℹ️ **Demo Mode**: Showing sample data. Upload your own data.csv to analyze your content.")
     
     if extracted is None:
         st.warning("No processed data found.")
