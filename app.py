@@ -623,6 +623,7 @@ elif page == "Live Analysis":
     input_method = st.radio("Choose input method:", ["Paste HTML", "Enter URL", "Upload File"])
     
     html_content = None
+    source_url = None  # Track the source URL
     
     if input_method == "Paste HTML":
         html_content = st.text_area("Paste your HTML content here:", height=200)
@@ -670,10 +671,19 @@ elif page == "Live Analysis":
                                 """)
                         else:
                             html_content = result
-                            st.success(f"✅ Successfully fetched content!")
+                            source_url = url  # Store the URL
+                            st.success(f"✅ Successfully fetched content from {url}")
                             st.info(f"📄 Retrieved {len(html_content):,} characters")
-                            # Auto-trigger analysis
-                            st.session_state['html_to_analyze'] = html_content
+                            
+                            # Show fetched content preview
+                            with st.expander("📋 View Fetched HTML (click to expand)"):
+                                st.code(html_content[:2000], language='html')
+                                if len(html_content) > 2000:
+                                    st.caption(f"Showing first 2,000 characters. Total: {len(html_content):,} characters")
+                            
+                            # Store URL in session state
+                            st.session_state['analyzed_url'] = url
+                            st.success("👇 Click 'Analyze Content' button below to proceed")
                     except Exception as e:
                         st.error(f"Unexpected error: {str(e)}")
                         st.info("Try using the 'Paste HTML' option instead.")
@@ -682,8 +692,28 @@ elif page == "Live Analysis":
         uploaded_file = st.file_uploader("Upload HTML file", type=['html', 'htm'])
         if uploaded_file:
             html_content = uploaded_file.read().decode('utf-8')
+            st.success(f"✅ File uploaded: {uploaded_file.name}")
+            st.info(f"📄 Size: {len(html_content):,} characters")
+            
+            # Show uploaded content preview
+            with st.expander("📋 View Uploaded HTML (click to expand)"):
+                st.code(html_content[:2000], language='html')
+                if len(html_content) > 2000:
+                    st.caption(f"Showing first 2,000 characters. Total: {len(html_content):,} characters")
     
-    if st.button("Analyze Content", type="primary") and html_content:
+    # Show analyze button with content indicator
+    if html_content:
+        st.markdown("---")
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write(f"**Ready to analyze:** {len(html_content):,} characters loaded")
+        with col2:
+            analyze_button = st.button("🔍 Analyze Content", type="primary", use_container_width=True)
+    else:
+        analyze_button = st.button("🔍 Analyze Content", type="primary", disabled=True)
+        st.caption("↑ First, paste HTML, fetch from URL, or upload a file")
+    
+    if analyze_button and html_content:
         with st.spinner("Analyzing content..."):
             # Parse HTML
             parsed = parse_html(html_content)
@@ -702,10 +732,15 @@ elif page == "Live Analysis":
                 )
                 
                 # Display results
-                st.success("Analysis Complete")
+                st.success("✅ Analysis Complete")
+                
+                # Show source information
+                if 'analyzed_url' in st.session_state and st.session_state['analyzed_url']:
+                    st.markdown("---")
+                    st.info(f"🌐 **Analyzed URL:** {st.session_state['analyzed_url']}")
                 
                 st.markdown("---")
-                st.subheader("Analysis Results")
+                st.subheader("📊 Analysis Results")
                 
                 # Key metrics
                 col1, col2, col3, col4 = st.columns(4)
@@ -771,8 +806,13 @@ elif page == "Live Analysis":
                 
                 # Preview
                 st.markdown("---")
-                st.subheader("Content Preview")
-                st.write(f"**Title:** {parsed['title']}")
+                st.subheader("📝 Content Preview")
+                
+                # Show URL again if available
+                if 'analyzed_url' in st.session_state and st.session_state['analyzed_url']:
+                    st.write(f"🌐 **Source URL:** [{st.session_state['analyzed_url']}]({st.session_state['analyzed_url']})")
+                
+                st.write(f"**Title:** {parsed['title'] if parsed['title'] else 'No title found'}")
                 st.text_area("Extracted Text (first 500 chars):", parsed['clean_text'][:500] + "...", height=150)
 
 # PAGE 4: MODEL INSIGHTS
