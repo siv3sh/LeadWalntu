@@ -25,7 +25,7 @@ warnings.filterwarnings('ignore')
 # Page configuration
 st.set_page_config(
     page_title="SEO Content Quality Analyzer",
-    page_icon="📊",
+    page_icon="S",
     layout="wide",
     initial_sidebar_state="expanded"
 )
